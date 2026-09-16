@@ -1,0 +1,13 @@
+You are now connected to database "my_db48_ex02" as user "yugabyte".
+SET
+                                                     QUERY PLAN                                                     
+--------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=21562.22..21812.22 rows=100000 width=59) (actual time=267.715..279.740 rows=100000 loops=1)
+   Sort Key: col2
+   Sort Method: quicksort  Memory: 13229kB
+   ->  Seq Scan on t1  (cost=21.09..13257.40 rows=100000 width=59) (actual time=2.579..241.263 rows=100000 loops=1)
+ Planning Time: 10.982 ms
+ Execution Time: 293.255 ms
+ Peak Memory Usage: 19755 kB
+(7 rows)
+

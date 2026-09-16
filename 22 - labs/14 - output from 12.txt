@@ -1,0 +1,14 @@
+You are now connected to database "my_db48_ex01" as user "yugabyte".
+                                                        QUERY PLAN                                                         
+---------------------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=42.19..43.56 rows=10 width=118) (actual time=1.554..1.567 rows=9 loops=1)
+   ->  Index Scan using t2_pkey on t2  (cost=21.10..22.19 rows=10 width=59) (actual time=0.927..0.929 rows=9 loops=1)
+         Index Cond: ((col1 = 5) AND (col2 > 5))
+   ->  Materialize  (cost=21.09..21.25 rows=1 width=59) (actual time=0.069..0.069 rows=1 loops=9)
+         ->  Index Scan using t1_pkey on t1  (cost=21.09..21.25 rows=1 width=59) (actual time=0.613..0.615 rows=1 loops=1)
+               Index Cond: (col1 = 5)
+ Planning Time: 12.405 ms
+ Execution Time: 2.035 ms
+ Peak Memory Usage: 202 kB
+(9 rows)
+

@@ -1,0 +1,18 @@
+You are now connected to database "my_db48_ex07" as user "yugabyte".
+                                                                     QUERY PLAN
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=66.27..739.72 rows=1914 width=38) (actual time=7.587..12.984 rows=1900 loops=1)
+   ->  Index Scan using t3_pkey on t3  (cost=21.09..21.20 rows=1 width=10) (actual time=0.268..0.269 rows=1 loops=1)
+         Index Cond: (col1 = 'FLT-00025'::text)
+   ->  YB Batched Nested Loop Join  (cost=45.18..699.38 rows=1914 width=28) (actual time=7.315..12.277 rows=1900 loops=1)
+         Join Filter: (t4.col2 = t5.col1)
+         ->  Index Only Scan using idx_t5_col3_col2_col1 on t5  (cost=24.09..207.29 rows=1951 width=25) (actual time=0.447..0.889 rows=1900 loops=1)
+               Index Cond: (col3 = 'FLT-00025'::text)
+               Heap Fetches: 0
+         ->  Index Scan using t4_pkey on t4  (cost=21.09..245.72 rows=1005 width=18) (actual time=4.865..5.000 rows=700 loops=2)
+               Index Cond: ((col2 = ANY (ARRAY[t5.col1, $1, $2, ..., $1023])) AND (col1 = 'LA'::text))
+ Planning Time: 113.633 ms
+ Execution Time: 16.132 ms
+ Peak Memory Usage: 1641 kB
+(13 rows)
+

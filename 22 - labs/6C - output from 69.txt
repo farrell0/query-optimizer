@@ -1,0 +1,18 @@
+You are now connected to database "my_db48_ex06" as user "yugabyte".
+                                                                        QUERY PLAN
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+ Hash Join  (cost=1467.65..11477.06 rows=5023 width=49) (actual time=8.515..145.074 rows=5000 loops=1)
+   Hash Cond: (t3.col2 = t1.col1)
+   ->  GroupAggregate  (cost=24.09..9668.07 rows=20093 width=44) (actual time=1.434..131.487 rows=20000 loops=1)
+         Group Key: t3.col2
+         ->  Index Only Scan using idx_t3_col2_covering on t3  (cost=24.09..8666.90 rows=100000 width=10) (actual time=1.420..106.636 rows=100000 loops=1)
+               Heap Fetches: 0
+   ->  Hash  (cost=1381.05..1381.05 rows=5000 width=9) (actual time=7.017..7.018 rows=5000 loops=1)
+         Buckets: 8192  Batches: 1  Memory Usage: 265kB
+         ->  Seq Scan on t1  (cost=21.09..1381.05 rows=5000 width=9) (actual time=1.492..5.886 rows=5000 loops=1)
+               Storage Filter: (col2 = 'West'::text)
+ Planning Time: 14.516 ms
+ Execution Time: 146.283 ms
+ Peak Memory Usage: 681 kB
+(13 rows)
+

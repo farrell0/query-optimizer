@@ -1,0 +1,20 @@
+You are now connected to database "my_db48_ex06" as user "yugabyte".
+                                                               QUERY PLAN
+----------------------------------------------------------------------------------------------------------------------------------------
+ Seq Scan on t1  (cost=21.09..370083.31 rows=5000 width=49) (actual time=5.216..16155.093 rows=5000 loops=1)
+   Storage Filter: (col2 = 'West'::text)
+   SubPlan 1
+     ->  Finalize Aggregate  (cost=24.42..24.43 rows=1 width=8) (actual time=1.118..1.119 rows=1 loops=5000)
+           ->  Index Only Scan using idx_t2_col2 on t2  (cost=24.09..24.41 rows=5 width=0) (actual time=1.095..1.098 rows=1 loops=5000)
+                 Index Cond: (col2 = t1.col1)
+                 Heap Fetches: 0
+                 Partial Aggregate: true
+   SubPlan 2
+     ->  Aggregate  (cost=49.30..49.31 rows=1 width=32) (actual time=2.105..2.105 rows=1 loops=5000)
+           ->  Index Scan using idx_t2_col2 on t2 t2_1  (cost=48.18..49.28 rows=5 width=6) (actual time=2.077..2.082 rows=5 loops=5000)
+                 Index Cond: (col2 = t1.col1)
+ Planning Time: 18.111 ms
+ Execution Time: 16159.895 ms
+ Peak Memory Usage: 717 kB
+(15 rows)
+

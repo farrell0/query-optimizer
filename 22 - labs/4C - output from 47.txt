@@ -1,0 +1,14 @@
+You are now connected to database "my_db48_ex04" as user "yugabyte".
+                                                       QUERY PLAN                                                        
+-------------------------------------------------------------------------------------------------------------------------
+ YB Batched Nested Loop Left Join  (cost=42.17..6098.70 rows=104 width=16) (actual time=35.292..35.344 rows=100 loops=1)
+   Join Filter: (t1.col1 = t2.col1)
+   ->  Seq Scan on t1  (cost=21.09..6057.84 rows=104 width=8) (actual time=33.530..33.539 rows=100 loops=1)
+         Storage Filter: (col1 <= 100)
+   ->  Index Scan using t2_pkey on t2  (cost=21.08..40.73 rows=104 width=8) (actual time=1.672..1.684 rows=100 loops=1)
+         Index Cond: (col1 = ANY (ARRAY[t1.col1, $1, $2, ..., $1023]))
+ Planning Time: 77.439 ms
+ Execution Time: 36.627 ms
+ Peak Memory Usage: 659 kB
+(9 rows)
+

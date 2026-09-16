@@ -1,0 +1,19 @@
+You are now connected to database "my_db48_ex05" as user "yugabyte".
+                                                              QUERY PLAN                                                               
+---------------------------------------------------------------------------------------------------------------------------------------
+ Unique  (cost=232668.46..236755.04 rows=200000 width=270) (actual time=1570.274..1676.840 rows=100000 loops=1)
+   ->  Sort  (cost=232668.46..233485.77 rows=326927 width=270) (actual time=1570.271..1598.808 rows=333333 loops=1)
+         Sort Key: t1.col1, t1.col4, t1.col9, t1.col10
+         Sort Method: external merge  Disk: 92360kB
+         ->  Hash Join  (cost=35561.17..120033.22 rows=326927 width=270) (actual time=681.834..1343.021 rows=333333 loops=1)
+               Hash Cond: (t2.col1 = t1.col1)
+               ->  Seq Scan on t2  (cost=21.10..73127.94 rows=339867 width=12) (actual time=4.819..474.296 rows=333333 loops=1)
+                     Storage Filter: (status = 'active'::text)
+               ->  Hash  (cost=30774.07..30774.07 rows=100000 width=262) (actual time=676.910..676.911 rows=100000 loops=1)
+                     Buckets: 32768  Batches: 4  Memory Usage: 7582kB
+                     ->  Seq Scan on t1  (cost=21.09..30774.07 rows=100000 width=262) (actual time=7.532..633.983 rows=100000 loops=1)
+ Planning Time: 55.844 ms
+ Execution Time: 1701.840 ms
+ Peak Memory Usage: 15206 kB
+(14 rows)
+

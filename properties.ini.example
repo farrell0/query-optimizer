@@ -1,0 +1,16 @@
+
+# Local configuration for the YugabyteDB query plan management demonstration.
+# Copy this file to "properties.ini" and fill in values for your own
+# environment. Keep "properties.ini" itself out of version control --
+# it's already covered by .gitignore in this repo.
+
+[database]
+DATABASE_HOST=
+DATABASE_PORT=5433
+DATABASE_NAME=
+DATABASE_USER=
+DATABASE_PASSWORD=
+
+[web]
+WEB_HOST=0.0.0.0
+WEB_PORT=5048

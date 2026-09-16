@@ -1,0 +1,15 @@
+You are now connected to database "my_db48_ex03" as user "yugabyte".
+DROP TABLE
+CREATE TABLE
+INSERT 0 1000000
+CREATE INDEX
+ANALYZE
+                                                          QUERY PLAN                                                          
+------------------------------------------------------------------------------------------------------------------------------
+ Index Scan using t4_col1_lex_idx on t4  (cost=20.00..35.00 rows=400 width=41) (actual time=9.992..71.995 rows=10000 loops=1)
+   Index Cond: (to_tsvector('simple'::regconfig, col1) @@ '''golden'':* <-> ''dragon'':*'::tsquery)
+ Planning Time: 9.159 ms
+ Execution Time: 73.904 ms
+ Peak Memory Usage: 78 kB
+(5 rows)
+

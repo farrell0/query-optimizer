@@ -1,0 +1,10 @@
+You are now connected to database "my_db48_ex03" as user "yugabyte".
+                                                QUERY PLAN                                                 
+-----------------------------------------------------------------------------------------------------------
+ Seq Scan on t1  (cost=21.10..61958.72 rows=9851 width=41) (actual time=74.319..303.490 rows=5000 loops=1)
+   Storage Filter: (col1 ~~ '%GE AK'::text)
+ Planning Time: 41.525 ms
+ Execution Time: 317.859 ms
+ Peak Memory Usage: 81 kB
+(5 rows)
+

@@ -1,0 +1,11 @@
+You are now connected to database "my_db48_ex03" as user "yugabyte".
+                                                              QUERY PLAN                                                               
+---------------------------------------------------------------------------------------------------------------------------------------
+ Index Scan using t3_col1_trgm_idx on t3  (cost=16.00..7602.82 rows=399704 width=41) (actual time=9.476..1796.057 rows=400000 loops=1)
+   Index Cond: (col1 ~~ '%LE WA'::text)
+   Rows Removed by Index Recheck: 20000
+ Planning Time: 33.486 ms
+ Execution Time: 1875.874 ms
+ Peak Memory Usage: 135 kB
+(6 rows)
+

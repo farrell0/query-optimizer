@@ -1,0 +1,7 @@
+properties.ini
+__pycache__/
+*.pyc
+.DS_Store
+*.swp
+~$*
+.local-runtime/

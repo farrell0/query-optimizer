@@ -1,0 +1,14 @@
+You are now connected to database "my_db48_ex04" as user "yugabyte".
+                                                     QUERY PLAN                                                     
+--------------------------------------------------------------------------------------------------------------------
+ Hash Left Join  (cost=1002.61..9767.79 rows=100000 width=16) (actual time=27.894..145.244 rows=100000 loops=1)
+   Hash Cond: (t1.col1 = t2.col1)
+   ->  Seq Scan on t1  (cost=21.09..8523.76 rows=100000 width=8) (actual time=3.513..84.543 rows=100000 loops=1)
+   ->  Hash  (cost=856.52..856.52 rows=10000 width=8) (actual time=24.310..24.311 rows=10000 loops=1)
+         Buckets: 16384  Batches: 1  Memory Usage: 519kB
+         ->  Seq Scan on t2  (cost=21.08..856.52 rows=10000 width=8) (actual time=1.677..21.353 rows=10000 loops=1)
+ Planning Time: 79.297 ms
+ Execution Time: 167.949 ms
+ Peak Memory Usage: 923 kB
+(9 rows)
+

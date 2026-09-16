@@ -1,0 +1,14 @@
+You are now connected to database "my_db48_ex02" as user "yugabyte".
+                                                          QUERY PLAN                                                           
+-------------------------------------------------------------------------------------------------------------------------------
+ YB Bitmap Table Scan on t1  (cost=78.55..98.96 rows=101 width=59) (actual time=2.594..2.605 rows=101 loops=1)
+   ->  BitmapOr  (cost=54.46..54.46 rows=101 width=0) (actual time=0.954..0.954 rows=101 loops=1)
+         ->  Bitmap Index Scan on t1_pkey  (cost=0.00..21.22 rows=1 width=0) (actual time=0.612..0.612 rows=1 loops=1)
+               Index Cond: (col1 = 10)
+         ->  Bitmap Index Scan on t1_col2_idx  (cost=0.00..33.19 rows=100 width=0) (actual time=0.338..0.338 rows=100 loops=1)
+               Index Cond: (col2 = 20)
+ Planning Time: 11.312 ms
+ Execution Time: 3.253 ms
+ Peak Memory Usage: 190 kB
+(9 rows)
+

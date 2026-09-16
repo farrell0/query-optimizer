@@ -1,0 +1,11 @@
+You are now connected to database "my_db48_ex03" as user "yugabyte".
+                                                          QUERY PLAN                                                           
+-------------------------------------------------------------------------------------------------------------------------------
+ Index Scan using t2_col1_rev_idx on t2  (cost=48.20..48.49 rows=9851 width=74) (actual time=19.407..69.373 rows=5000 loops=1)
+   Index Cond: ((col1_rev >= 'KA EG'::text) AND (col1_rev < 'KA EH'::text))
+   Storage Index Filter: (col1_rev ~~ 'KA EG%'::text)
+ Planning Time: 46.123 ms
+ Execution Time: 72.038 ms
+ Peak Memory Usage: 103 kB
+(6 rows)
+

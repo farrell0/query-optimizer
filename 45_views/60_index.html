@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+   <meta charset="utf-8" />
+   <meta name="viewport" content="width=device-width, initial-scale=1" />
+   <title>YugabyteDB — Query Plan Management</title>
+   <link rel="stylesheet" href="/static/10_styles.css" />
+</head>
+<body>
+   <header class="header">
+      <div>
+         <div class="eyebrow">YugabyteDB feature demonstration</div>
+         <h1>Query plan management</h1>
+      </div>
+      <img class="logo" src="/static/yugabyte_logo.png" alt="YugabyteDB" />
+   </header>
+
+   <nav class="tabs" aria-label="Demonstration sections">
+      <button class="tab-button active" data-tab="tab1">Overview</button>
+      <button class="tab-button" data-tab="tab2">Query</button>
+      <button class="tab-button" data-tab="tab3">Query plan management</button>
+   </nav>
+
+   <main>
+      <section class="tab-content active" id="tab1">
+         <h2>Overview</h2>
+         <div class="slide-panel">
+            <div class="slide-controls">
+               <button id="btnSlideUp">Previous</button>
+               <button id="btnSlideDown">Next</button>
+               <div class="slide-label" id="slideLabel">Page 0 of 0</div>
+            </div>
+            <div class="slide-frame">
+               <img id="slideImage" alt="Presentation slide" />
+            </div>
+         </div>
+      </section>
+
+      <section class="tab-content" id="tab2">
+         <div class="section-heading">
+            <div>
+               <h2>Query</h2>
+               <p class="section-copy">Watch a prepared statement's cached plan silently stop fitting the data it's asked about.</p>
+            </div>
+            <div id="readyBadge" class="badge waiting">Preparing</div>
+         </div>
+
+         <div class="workload-note">
+            <strong>In our data:</strong>
+            A table <code>t1</code> with 500,000 rows split into two very different
+            populations under one <code>customer_id</code> column — 500 "typical"
+            customers with ~100 rows each (50,000 rows total), and 3 "mega" customers
+            with 150,000 rows each (450,000 rows total, ~90% of the table). Indexed on
+            <code>customer_id</code>.
+         </div>
+
+         <div class="workload-note">
+            <strong>The query:</strong> a single prepared statement, held open on one
+            persistent connection the way a pooled application would —
+            <code>PREPARE find_by_customer(int) AS SELECT id, customer_id, payload FROM t1
+            WHERE customer_id = $1;</code> — then repeatedly <code>EXECUTE
+            find_by_customer(&lt;id&gt;)</code>. Click <strong>Typical</strong> a
+            few times, then click <strong>Mega</strong>: Postgres's planner will have
+            already settled on one reusable plan shaped by the typical calls, and the
+            mega customer's query pays for it.
+         </div>
+
+         <div class="control-card">
+            <fieldset id="customerFieldset">
+               <legend>Query for:</legend>
+               <label><input type="radio" name="customerType" value="typical" checked /> Typical customer</label>
+               <label><input type="radio" name="customerType" value="mega" /> Mega customer</label>
+            </fieldset>
+            <div class="control-actions">
+               <button id="runQuery" class="primary">Run query</button>
+            </div>
+         </div>
+
+         <div class="last-results-grid">
+            <div class="last-result-row"><span>Typical ANY:</span><strong id="lastTypicalAuto">0.00 ms</strong></div>
+            <div class="last-result-row"><span>Typical CUSTOM:</span><strong id="lastTypicalCustom">0.00 ms</strong></div>
+            <div class="last-result-row"><span>Typical GENERIC:</span><strong id="lastTypicalGeneric">0.00 ms</strong></div>
+            <div class="last-result-row"><span>Mega ANY:</span><strong id="lastMegaAuto">0.00 ms</strong></div>
+            <div class="last-result-row"><span>Mega CUSTOM:</span><strong id="lastMegaCustom">0.00 ms</strong></div>
+            <div class="last-result-row"><span>Mega GENERIC:</span><strong id="lastMegaGeneric">0.00 ms</strong></div>
+         </div>
+
+         <section class="status-card" id="resultsCard">
+            <div class="status-topline">
+               <strong>Results</strong>
+               <span id="resultStats">No query run yet</span>
+            </div>
+            <table class="results-table" id="resultsTable">
+               <thead>
+                  <tr><th>id</th><th>customer_id</th><th>payload</th></tr>
+               </thead>
+               <tbody id="resultsBody">
+                  <tr><td colspan="3" class="empty-row">Run a query to see the first five rows returned.</td></tr>
+               </tbody>
+            </table>
+         </section>
+
+         <div class="plan-grid">
+            <section class="status-card">
+               <div class="status-topline"><strong>Effective plan_cache_mode</strong></div>
+               <div id="currentPlanCacheMode" class="plan-cache-value">—</div>
+               <fieldset id="planCacheFieldset">
+                  <legend>Set plan_cache_mode:</legend>
+                  <label><input type="radio" name="planCacheMode" value="auto" /> auto</label>
+                  <label><input type="radio" name="planCacheMode" value="force_custom_plan" /> force_custom_plan</label>
+                  <label><input type="radio" name="planCacheMode" value="force_generic_plan" /> force_generic_plan</label>
+               </fieldset>
+            </section>
+
+            <section class="status-card">
+               <div class="status-topline"><strong>Most recent query plan</strong></div>
+               <pre id="planText" class="plan-panel">Run a query to see its plan here.</pre>
+            </section>
+         </div>
+      </section>
+
+      <section class="tab-content" id="tab3">
+         <div class="section-heading">
+            <div>
+               <h2>Query plan management</h2>
+               <p class="section-copy">Automatic detection of the regression shown on the Query tab.</p>
+            </div>
+            <div class="control-actions"><button id="refreshQpm">Refresh</button></div>
+         </div>
+         <div class="workload-note">
+            Query Plan Management (QPM) tracks every distinct plan the demo query has
+            produced (<code>yb_pg_stat_plans</code>) and flags when the plan currently in
+            use doesn't match the best one on record
+            (<code>yb_pg_stat_plans_insights</code>, <strong>Needs review</strong> below).
+            Run some queries on the <strong>Query</strong> tab first, then come back here.
+         </div>
+         <p id="qpmStatus">Checking availability…</p>
+         <section class="status-card" id="qpmCard" style="display:none;">
+            <table class="results-table" id="qpmTable">
+               <thead>
+                  <tr>
+                     <th>Plan</th>
+                     <th>Calls</th>
+                     <th>Avg exec</th>
+                     <th>Max exec</th>
+                     <th>Best avg exec seen</th>
+                     <th>Fastest plan?</th>
+                     <th>Needs review</th>
+                     <th>Last used</th>
+                  </tr>
+               </thead>
+               <tbody id="qpmBody"></tbody>
+            </table>
+         </section>
+      </section>
+   </main>
+
+   <script src="/static/60_index.js"></script>
+</body>
+</html>

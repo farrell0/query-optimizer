@@ -1,0 +1,20 @@
+You are now connected to database "my_db48_ex06" as user "yugabyte".
+                                                       QUERY PLAN
+------------------------------------------------------------------------------------------------------------------------
+ Hash Join  (cost=11498.26..12110.88 rows=4991 width=49) (actual time=150.750..164.493 rows=5000 loops=1)
+   Hash Cond: (t2.col2 = t1.col1)
+   Buffers: temp read=60 written=129
+   ->  HashAggregate  (cost=10054.70..10304.24 rows=19963 width=44) (actual time=144.144..152.721 rows=20000 loops=1)
+         Group Key: t2.col2
+         Batches: 5  Memory Usage: 8241kB  Disk Usage: 696kB
+         Buffers: temp read=60 written=129
+         ->  Seq Scan on t2  (cost=21.09..9304.70 rows=100000 width=10) (actual time=1.407..93.302 rows=100000 loops=1)
+   ->  Hash  (cost=1381.05..1381.05 rows=5000 width=9) (actual time=6.570..6.571 rows=5000 loops=1)
+         Buckets: 8192  Batches: 1  Memory Usage: 265kB
+         ->  Seq Scan on t1  (cost=21.09..1381.05 rows=5000 width=9) (actual time=1.281..5.344 rows=5000 loops=1)
+               Storage Filter: (col2 = 'West'::text)
+ Planning Time: 17.392 ms
+ Execution Time: 165.904 ms
+ Peak Memory Usage: 8932 kB
+(15 rows)
+

@@ -1,0 +1,13 @@
+You are now connected to database "my_db48_ex02" as user "yugabyte".
+SET
+                                                     QUERY PLAN                                                     
+--------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=25324.72..25574.72 rows=100000 width=59) (actual time=266.545..271.658 rows=100000 loops=1)
+   Sort Key: col2
+   Sort Method: external merge  Disk: 6768kB
+   ->  Seq Scan on t1  (cost=21.09..13257.40 rows=100000 width=59) (actual time=2.290..234.344 rows=100000 loops=1)
+ Planning Time: 10.003 ms
+ Execution Time: 285.005 ms
+ Peak Memory Usage: 5238 kB
+(7 rows)
+
