@@ -9,6 +9,7 @@ import random
 import threading
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from glob import glob
 from pathlib import Path
 from typing import Any
@@ -25,6 +26,13 @@ TYPICAL_CUSTOMER_IDS = list(range(1, 501))
 MEGA_CUSTOMER_IDS = [9001, 9002, 9003]
 ALLOWED_PLAN_CACHE_MODES = {"auto", "force_custom_plan", "force_generic_plan"}
 PAYLOAD_DISPLAY_LENGTH = 40
+
+# Plan-regression alert monitor: how often to poll yb_pg_stat_plans, and how
+# much slower a query's newly-active plan has to be than the plan it
+# replaced (as a percentage) before it's worth flagging.
+PLAN_MONITOR_POLL_SECONDS = 10
+PLAN_REGRESSION_THRESHOLD_PCT = 25.0
+MAX_ALERTS = 200
 
 
 def parse_execution_time_ms(plan_text: str) -> float | None:
@@ -118,6 +126,17 @@ class DemoState:
         self.server_version = ""
         self.last_results: dict[str, dict] = {}
         self.last_query_id: int | None = None
+
+        # Plan-regression alert monitor state. last_seen_plan tracks, per
+        # queryid, the (planid, avg_exec_time) that was "currently active"
+        # (most recently used) as of the last poll -- purely for reporting
+        # whether the planid itself also changed. regression_state tracks
+        # whether each queryid is CURRENTLY considered regressed, so alerts
+        # fire on the good->bad transition, not once per poll forever.
+        # alerts is newest-first, capped at MAX_ALERTS.
+        self.last_seen_plan: dict[str, tuple[str, float]] = {}
+        self.regression_state: dict[str, bool] = {}
+        self.alerts: list[dict] = []
 
     def db_connect(self, database: str | None = None):
         return psycopg2.connect(
@@ -360,6 +379,103 @@ class DemoState:
             })
         return {"available": True, "query_id": str(query_id), "plans": plans}
 
+    def check_for_plan_regressions(self) -> None:
+        """Poll yb_pg_stat_plans/yb_pg_stat_plans_insights for the
+        CURRENTLY-active plan (the one with the most recent last_used) per
+        queryid, across every query QPM has ever seen -- not just this
+        demo's one query. Alert when that active plan's avg_exec_time is at
+        least PLAN_REGRESSION_THRESHOLD_PCT worse than the BEST avg_exec_time
+        ever recorded for that query (yb_pg_stat_plans_insights.
+        min_avg_exec_time) -- deliberately NOT gated on the planid itself
+        having changed: this demo's own reproducible regression (a stale
+        generic plan reused for a much-less-selective parameter) keeps the
+        SAME planid throughout, its rolling average just drifts worse as
+        mismatched calls blend in. Comparing against the query's own best
+        known average catches that case too, not just "a different plan was
+        chosen." Fires once per good->bad transition (regression_state),
+        not once per poll for as long as it stays bad. Uses its own
+        short-lived connection, same reasoning as qpm_snapshot: never
+        perturb the persistent connection's own custom-vs-generic plan
+        cache state."""
+        connection = self.db_connect()
+        try:
+            connection.autocommit = True
+            cursor = connection.cursor()
+            cursor.execute("SELECT to_regclass('yb_pg_stat_plans') IS NOT NULL")
+            (available,) = cursor.fetchone()
+            if not available:
+                cursor.close()
+                return
+
+            cursor.execute(
+                """
+                SELECT DISTINCT ON (p.queryid)
+                       p.queryid, p.planid, p.avg_exec_time, i.min_avg_exec_time
+                FROM yb_pg_stat_plans p
+                LEFT JOIN yb_pg_stat_plans_insights i
+                  ON i.queryid = p.queryid AND i.planid = p.planid
+                ORDER BY p.queryid, p.last_used DESC
+                """
+            )
+            rows = cursor.fetchall()
+            cursor.close()
+        finally:
+            connection.close()
+
+        with self.lock:
+            for queryid, planid, avg_exec_time, min_avg_exec_time in rows:
+                queryid = str(queryid)
+                planid = str(planid)
+                previous = self.last_seen_plan.get(queryid)
+                old_planid = previous[0] if previous else None
+                self.last_seen_plan[queryid] = (planid, avg_exec_time)
+
+                if avg_exec_time is None or not min_avg_exec_time:
+                    continue
+
+                pct_above_best = (avg_exec_time - min_avg_exec_time) / min_avg_exec_time * 100
+                is_regressed = pct_above_best >= PLAN_REGRESSION_THRESHOLD_PCT
+                was_regressed = self.regression_state.get(queryid, False)
+                self.regression_state[queryid] = is_regressed
+
+                if not (is_regressed and not was_regressed):
+                    continue  # not a new regression -- either fine, or already alerted
+
+                plan_note = (
+                    f"plan changed {old_planid} -> {planid}"
+                    if old_planid and old_planid != planid
+                    else f"plan {planid} unchanged"
+                )
+                message = (
+                    f"Query {queryid}: {plan_note} -- active plan's avg exec time "
+                    f"{avg_exec_time:.2f}ms is {pct_above_best:.0f}% above its best "
+                    f"known ({min_avg_exec_time:.2f}ms)"
+                )
+                self.alerts.insert(0, {
+                    "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                    "queryid": queryid,
+                    "planid": planid,
+                    "old_planid": old_planid,
+                    "avg_ms": round(avg_exec_time, 3),
+                    "best_avg_ms": round(min_avg_exec_time, 3),
+                    "pct_above_best": round(pct_above_best, 1),
+                    "message": message,
+                })
+            del self.alerts[MAX_ALERTS:]
+
+    def start_alert_monitor(self) -> None:
+        """Run check_for_plan_regressions on a fixed interval, forever, in a
+        daemon thread. Deliberately tolerant of transient errors (a
+        restarting connection, a momentary network blip) -- one bad poll
+        should never take the monitor down."""
+        while True:
+            try:
+                if self.setup_ready:
+                    self.check_for_plan_regressions()
+            except Exception:
+                pass
+            time.sleep(PLAN_MONITOR_POLL_SECONDS)
+
     def snapshot(self) -> dict:
         with self.lock:
             setup_ready = self.setup_ready
@@ -420,6 +536,12 @@ def create_app() -> Flask:
         except Exception as exc:
             return jsonify({"ok": False, "message": str(exc)}), 409
 
+    @app.get("/api/alerts")
+    def api_alerts():
+        with state.lock:
+            alerts = list(state.alerts)
+        return jsonify({"ok": True, "alerts": alerts})
+
     @app.post("/api/query")
     def api_query():
         try:
@@ -441,6 +563,7 @@ def create_app() -> Flask:
             return jsonify({"ok": False, "message": str(exc)}), 409
 
     threading.Thread(target=state.setup_database, daemon=True).start()
+    threading.Thread(target=state.start_alert_monitor, daemon=True).start()
     return app
 
 
