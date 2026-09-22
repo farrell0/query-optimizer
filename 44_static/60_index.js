@@ -5,6 +5,7 @@ function setActiveTab(tabId) {
    document.querySelectorAll(".tab-button").forEach((button) => button.classList.toggle("active", button.dataset.tab === tabId));
    document.querySelectorAll(".tab-content").forEach((panel) => panel.classList.toggle("active", panel.id === tabId));
    if (tabId === "tab3") loadQpm();
+   if (tabId === "tab4") loadAlerts();
 }
 
 function updateSlide() {
@@ -205,12 +206,30 @@ async function loadQpm() {
    }
 }
 
+function renderAlerts(alerts) {
+   const log = document.getElementById("alertsLog");
+   log.value = alerts.length
+      ? alerts.map((a) => `[${a.timestamp}] ${a.message}`).join("\n\n")
+      : "";
+}
+
+async function loadAlerts() {
+   try {
+      const response = await fetch("/api/alerts", { cache: "no-store" });
+      const data = await response.json();
+      if (data.ok) renderAlerts(data.alerts);
+   } catch (_) {
+      /* leave display as-is; next refresh will retry */
+   }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
    document.querySelectorAll(".tab-button").forEach((button) => button.addEventListener("click", () => setActiveTab(button.dataset.tab)));
    document.getElementById("btnSlideUp").addEventListener("click", () => { slideIndex -= 1; updateSlide(); });
    document.getElementById("btnSlideDown").addEventListener("click", () => { slideIndex += 1; updateSlide(); });
    document.getElementById("runQuery").addEventListener("click", runQuery);
    document.getElementById("refreshQpm").addEventListener("click", loadQpm);
+   document.getElementById("refreshAlerts").addEventListener("click", loadAlerts);
    document.querySelectorAll('input[name="planCacheMode"]').forEach((radio) =>
       radio.addEventListener("change", () => changePlanCacheMode(radio.value))
    );
