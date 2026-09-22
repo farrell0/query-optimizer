@@ -19,6 +19,7 @@
       <button class="tab-button active" data-tab="tab1">Overview</button>
       <button class="tab-button" data-tab="tab2">Query</button>
       <button class="tab-button" data-tab="tab3">Query plan management</button>
+      <button class="tab-button" data-tab="tab4">Alerts</button>
    </nav>
 
    <main>
@@ -152,6 +153,28 @@
                <tbody id="qpmBody"></tbody>
             </table>
          </section>
+      </section>
+
+      <section class="tab-content" id="tab4">
+         <div class="section-heading">
+            <div>
+               <h2>Alerts</h2>
+               <p class="section-copy">
+                  A background monitor polls <code>yb_pg_stat_plans</code> /
+                  <code>yb_pg_stat_plans_insights</code> every 10 seconds, across
+                  every query QPM has seen (not just the demo query on the Query
+                  tab). When a query's currently-active plan is running at least
+                  25% slower, on average, than the best plan ever recorded for
+                  that query -- whether or not the plan itself changed, since a
+                  stale generic plan reused for a mismatched value keeps the
+                  <em>same</em> plan id while its average quietly gets worse -- an
+                  entry is appended here.
+               </p>
+            </div>
+            <div class="control-actions"><button id="refreshAlerts">Refresh</button></div>
+         </div>
+         <textarea id="alertsLog" class="alerts-log" readonly rows="20"
+            placeholder="No plan regressions observed yet."></textarea>
       </section>
    </main>
 
